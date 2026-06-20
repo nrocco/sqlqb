@@ -2,22 +2,26 @@ import io
 
 
 class Select:
-    def __init__(self, *args):
-        self.__columns = list(args)
-        self.__table = None
-        self.__wheres = []
-        self.__params = []
-        self.__joins = []
-        self.__orderby = []
-        self.__groupby = []
-        self.__limit = None
-        self.__offset = None
+    def __init__(self, *args: str):
+        self.__columns: list[str] = list(args)
+        self.__table: str | None = None
+        self.__wheres: list[str] = []
+        self.__params: list = []
+        self.__joins: list[str] = []
+        self.__orderby: list[tuple[str, str]] = []
+        self.__groupby: list[str] = []
+        self.__limit: int | None = None
+        self.__offset: int | None = None
 
-    def Columns(self, *columns) -> "Select":
+    def Columns(self, *columns: str) -> "Select":
+        if not columns:
+            raise ValueError("error: specify at least one column")
         self.__columns = list(columns)
         return self
 
     def From(self, table: str) -> "Select":
+        if not table or not table.strip():
+            raise ValueError("error: table name must not be empty")
         self.__table = table
         return self
 
@@ -31,11 +35,13 @@ class Select:
         self.__params += args
         return self
 
-    def OrderBy(self, column: str, direction="ASC") -> "Select":
+    def OrderBy(self, column: str, direction: str = "ASC") -> "Select":
+        if direction not in ("ASC", "DESC"):
+            raise ValueError("error: invalid order by direction")
         self.__orderby.append((column, direction))
         return self
 
-    def GroupBy(self, *columns) -> "Select":
+    def GroupBy(self, *columns: str) -> "Select":
         self.__groupby += columns
         return self
 

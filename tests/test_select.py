@@ -1,3 +1,5 @@
+import pytest
+
 from sqlqb import Select
 
 
@@ -30,6 +32,18 @@ class TestSelectBasic:
         q = Select("id").From("orders")
         assert "FROM orders" in q.sql
 
+    def test_columns_empty_raises(self):
+        with pytest.raises(ValueError):
+            Select().Columns()
+
+    def test_from_empty_raises(self):
+        with pytest.raises(ValueError):
+            Select().From("")
+
+    def test_from_blank_raises(self):
+        with pytest.raises(ValueError):
+            Select().From("   ")
+
     def test_method_chaining_returns_select(self):
         q = Select()
         assert q.From("t") is q
@@ -44,13 +58,13 @@ class TestSelectBasic:
 
 class TestWhere:
     def test_single_where(self):
-        q = Select("id").From("users").Where("id = %s", 1)
-        assert q.sql == "SELECT id FROM users WHERE id = %s"
+        q = Select("id").From("users").Where("id = ?", 1)
+        assert q.sql == "SELECT id FROM users WHERE id = ?"
         assert q.params == [1]
 
     def test_multiple_wheres_joined_with_and(self):
-        q = Select("id").From("users").Where("active = %s", True).Where("role = %s", "admin")
-        assert q.sql == "SELECT id FROM users WHERE active = %s AND role = %s"
+        q = Select("id").From("users").Where("active = ?", True).Where("role = ?", "admin")
+        assert q.sql == "SELECT id FROM users WHERE active = ? AND role = ?"
         assert q.params == [True, "admin"]
 
     def test_where_no_params(self):
@@ -59,7 +73,7 @@ class TestWhere:
         assert q.params == []
 
     def test_where_multiple_params(self):
-        q = Select().From("t").Where("a = %s AND b = %s", 1, 2)
+        q = Select().From("t").Where("a = ? AND b = ?", 1, 2)
         assert q.params == [1, 2]
 
     def test_no_where_clause_absent(self):
@@ -78,11 +92,11 @@ class TestJoin:
         assert "JOIN items i ON i.order_id = o.id" in q.sql
 
     def test_join_with_params(self):
-        q = Select("u.id").From("users u").Join("JOIN orders o ON o.user_id = u.id AND o.status = %s", "active")
+        q = Select("u.id").From("users u").Join("JOIN orders o ON o.user_id = u.id AND o.status = ?", "active")
         assert q.params == ["active"]
 
     def test_join_params_combined_with_where_params(self):
-        q = Select("u.id").From("users u").Join("JOIN orders o ON o.user_id = u.id AND o.type = %s", "sale").Where("u.active = %s", True)
+        q = Select("u.id").From("users u").Join("JOIN orders o ON o.user_id = u.id AND o.type = ?", "sale").Where("u.active = ?", True)
         assert q.params == ["sale", True]
 
     def test_no_join_absent(self):
@@ -102,6 +116,10 @@ class TestOrderBy:
     def test_multiple_order_by(self):
         q = Select("id").From("users").OrderBy("name").OrderBy("created_at", "DESC")
         assert q.sql == "SELECT id FROM users ORDER BY name ASC, created_at DESC"
+
+    def test_invalid_direction_raises(self):
+        with pytest.raises(ValueError):
+            Select("id").From("users").OrderBy("id", "RANDOM")
 
     def test_no_order_by_absent(self):
         q = Select("id").From("users")
@@ -163,14 +181,14 @@ class TestParams:
         assert q.params == []
 
     def test_params_accumulate_across_joins_and_wheres(self):
-        q = Select("id").From("users").Join("JOIN t ON t.id = users.t_id AND t.x = %s", 42).Where("active = %s", True).Where("role IN (%s, %s)", "admin", "mod")
+        q = Select("id").From("users").Join("JOIN t ON t.id = users.t_id AND t.x = ?", 42).Where("active = ?", True).Where("role IN (?, ?)", "admin", "mod")
         assert q.params == [42, True, "admin", "mod"]
 
 
 class TestClauseOrdering:
     def test_full_query_clause_order(self):
-        sql = Select("u.id", "u.name").From("users u").Join("JOIN orders o ON o.user_id = u.id").Where("u.active = %s", True).GroupBy("u.id", "u.name").OrderBy("u.name").Limit(25).Offset(50).sql
-        assert sql == ("SELECT u.id, u.name FROM users u JOIN orders o ON o.user_id = u.id WHERE u.active = %s GROUP BY u.id, u.name ORDER BY u.name ASC LIMIT 25 OFFSET 50")
+        sql = Select("u.id", "u.name").From("users u").Join("JOIN orders o ON o.user_id = u.id").Where("u.active = ?", True).GroupBy("u.id", "u.name").OrderBy("u.name").Limit(25).Offset(50).sql
+        assert sql == ("SELECT u.id, u.name FROM users u JOIN orders o ON o.user_id = u.id WHERE u.active = ? GROUP BY u.id, u.name ORDER BY u.name ASC LIMIT 25 OFFSET 50")
 
     def test_group_by_before_order_by(self):
         sql = Select("a").From("t").OrderBy("a").GroupBy("a").sql

@@ -30,13 +30,7 @@ class TestSelect:
         assert cursor.fetchone() == {"id": 1, "name": "Alice", "age": 30}
 
     def test_chaining(self, conn):
-        rows = (
-            conn.Select("name")
-            .From("users")
-            .Where("age >= ?", 18)
-            .OrderBy("name")
-            .fetchall()
-        )
+        rows = conn.Select("name").From("users").Where("age >= ?", 18).OrderBy("name").fetchall()
         assert rows == [{"name": "Alice"}, {"name": "Carol"}]
 
     def test_limit(self, conn):
@@ -108,5 +102,6 @@ class TestDelete:
     def test_delete_with_limit_not_supported(self, conn):
         # NOTE: sqlite library of python does not support LIMIT in delete queries
         import sqlite3
+
         with pytest.raises(sqlite3.OperationalError):
             conn.Delete().From("users").Limit(2).execute()

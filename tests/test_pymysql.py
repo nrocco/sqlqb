@@ -97,14 +97,7 @@ class TestSelect:
     def test_chaining_with_order_and_limit(self, mock_conn):
         conn, cursor = mock_conn
         cursor.fetchall.return_value = [{"name": "Alice"}]
-        result = (
-            Select(conn, "name")
-            .From("users")
-            .Where("age >= ?", 18)
-            .OrderBy("name")
-            .Limit(1)
-            .fetchall()
-        )
+        result = Select(conn, "name").From("users").Where("age >= ?", 18).OrderBy("name").Limit(1).fetchall()
         assert result == [{"name": "Alice"}]
 
 
@@ -129,13 +122,7 @@ class TestInsert:
     def test_execute_multiple_rows_rowcount(self, mock_conn):
         conn, cursor = mock_conn
         cursor.rowcount = 2
-        count = (
-            Insert(conn)
-            .Into("users")
-            .Values(id=1, name="Alice")
-            .Values(id=2, name="Bob")
-            .execute()
-        )
+        count = Insert(conn).Into("users").Values(id=1, name="Alice").Values(id=2, name="Bob").execute()
         assert count == 2
 
 

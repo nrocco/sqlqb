@@ -33,6 +33,7 @@ def conn(engine):
 # Engine
 # ---------------------------------------------------------------------------
 
+
 class TestEngine:
     def test_create_engine_returns_engine_subclass(self):
         e = create_engine("sqlite:///:memory:")
@@ -66,6 +67,7 @@ class TestEngine:
 # Connection
 # ---------------------------------------------------------------------------
 
+
 class TestConnection:
     def test_sa_methods_are_accessible(self, conn):
         assert callable(conn.commit)
@@ -75,24 +77,29 @@ class TestConnection:
 
     def test_select_returns_select_instance(self, conn):
         from sqlqb.sqlalchemy import Select
+
         assert isinstance(conn.Select("id"), Select)
 
     def test_insert_returns_insert_instance(self, conn):
         from sqlqb.sqlalchemy import Insert
+
         assert isinstance(conn.Insert(), Insert)
 
     def test_update_returns_update_instance(self, conn):
         from sqlqb.sqlalchemy import Update
+
         assert isinstance(conn.Update("users"), Update)
 
     def test_delete_returns_delete_instance(self, conn):
         from sqlqb.sqlalchemy import Delete
+
         assert isinstance(conn.Delete(), Delete)
 
 
 # ---------------------------------------------------------------------------
 # Select
 # ---------------------------------------------------------------------------
+
 
 class TestSelect:
     def test_fetchall(self, conn):
@@ -149,6 +156,7 @@ class TestSelect:
 # Insert
 # ---------------------------------------------------------------------------
 
+
 class TestInsert:
     def test_execute_returns_rowcount(self, conn):
         count = conn.Insert().Into("users").Values(id=4, name="Dave", age=40).execute()
@@ -167,6 +175,7 @@ class TestInsert:
 # ---------------------------------------------------------------------------
 # Update
 # ---------------------------------------------------------------------------
+
 
 class TestUpdate:
     def test_execute_returns_rowcount(self, conn):
@@ -196,6 +205,7 @@ class TestUpdate:
 # ---------------------------------------------------------------------------
 # Delete
 # ---------------------------------------------------------------------------
+
 
 class TestDelete:
     def test_execute_returns_rowcount(self, conn):

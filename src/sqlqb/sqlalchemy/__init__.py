@@ -1,5 +1,5 @@
-from sqlalchemy import text
 from sqlalchemy import create_engine as _create_engine
+from sqlalchemy import text
 from sqlalchemy.engine import Connection as _Connection
 from sqlalchemy.engine import Engine as _Engine
 
@@ -30,12 +30,12 @@ class Select(_Select):
 
     def fetchone(self):
         sql, params = _bind(self.sql, self.params)
-        row = self.__connection.execute(text(sql), params).mappings().fetchone()
+        row = self.execute().mappings().fetchone()
         return dict(row) if row is not None else None
 
     def fetchall(self) -> list:
         sql, params = _bind(self.sql, self.params)
-        return [dict(row) for row in self.__connection.execute(text(sql), params).mappings()]
+        return [dict(row) for row in self.execute().mappings()]
 
 
 class Insert(_Insert):

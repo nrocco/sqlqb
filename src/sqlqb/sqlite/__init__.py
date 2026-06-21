@@ -1,4 +1,6 @@
-import sqlite3
+from sqlite3 import Connection as _Connection
+from sqlite3 import Cursor as _Cursor
+from sqlite3 import connect as _connect
 
 from sqlqb import Select as _Select
 from sqlqb import Insert as _Insert
@@ -7,11 +9,11 @@ from sqlqb import Delete as _Delete
 
 
 class Select(_Select):
-    def __init__(self, connection, *args):
+    def __init__(self, connection: _Connection, *args):
         super().__init__(*args)
         self.__connection = connection
 
-    def execute(self) -> sqlite3.Cursor:
+    def execute(self) -> _Cursor:
         return self.__connection.execute(self.sql, self.params)
 
     def fetchone(self):
@@ -22,7 +24,7 @@ class Select(_Select):
 
 
 class Insert(_Insert):
-    def __init__(self, connection):
+    def __init__(self, connection: _Connection):
         super().__init__()
         self.__connection = connection
 
@@ -31,7 +33,7 @@ class Insert(_Insert):
 
 
 class Update(_Update):
-    def __init__(self, connection, table: str):
+    def __init__(self, connection: _Connection, table: str):
         super().__init__(table)
         self.__connection = connection
 
@@ -40,7 +42,7 @@ class Update(_Update):
 
 
 class Delete(_Delete):
-    def __init__(self, connection):
+    def __init__(self, connection: _Connection):
         super().__init__()
         self.__connection = connection
 
@@ -48,7 +50,7 @@ class Delete(_Delete):
         return self.__connection.execute(self.sql, self.params).rowcount
 
 
-class Connection(sqlite3.Connection):
+class Connection(_Connection):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.row_factory = lambda cursor, row: dict(zip([col[0] for col in cursor.description], row))
@@ -59,12 +61,12 @@ class Connection(sqlite3.Connection):
     def Insert(self) -> Insert:
         return Insert(self)
 
-    def Delete(self) -> Delete:
-        return Delete(self)
-
     def Update(self, table: str) -> Update:
         return Update(self, table)
 
+    def Delete(self) -> Delete:
+        return Delete(self)
+
 
 def connect(database, **kwargs) -> Connection:
-    return sqlite3.connect(database, factory=Connection, **kwargs)
+    return _connect(database, factory=Connection, **kwargs)

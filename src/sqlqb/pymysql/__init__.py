@@ -8,7 +8,7 @@ from sqlqb import Delete as _Delete
 
 
 class Select(_Select):
-    def __init__(self, connection, *args):
+    def __init__(self, connection: _Connection, *args):
         super().__init__(*args)
         self.__connection = connection
 
@@ -31,7 +31,7 @@ class Select(_Select):
 
 
 class Insert(_Insert):
-    def __init__(self, connection):
+    def __init__(self, connection: _Connection):
         super().__init__()
         self.__connection = connection
 
@@ -42,7 +42,7 @@ class Insert(_Insert):
 
 
 class Update(_Update):
-    def __init__(self, connection, table: str):
+    def __init__(self, connection: _Connection, table: str):
         super().__init__(table)
         self.__connection = connection
 
@@ -53,7 +53,7 @@ class Update(_Update):
 
 
 class Delete(_Delete):
-    def __init__(self, connection):
+    def __init__(self, connection: _Connection):
         super().__init__()
         self.__connection = connection
 
@@ -75,8 +75,11 @@ class Connection(_Connection):
     def Insert(self) -> Insert:
         return Insert(self)
 
+    def Update(self, table: str) -> Update:
+        return Update(self, table)
+
     def Delete(self) -> Delete:
         return Delete(self)
 
-    def Update(self, table: str) -> Update:
-        return Update(self, table)
+
+connect = Connection

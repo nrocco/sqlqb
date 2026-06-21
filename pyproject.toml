@@ -13,6 +13,12 @@ dev = [
     "pytest-cov>=7.1.0",
     "ruff>=0.15.17",
 ]
+pymysql = [
+    "pymysql>=1.2.0",
+]
+sqlalchemy = [
+    "sqlalchemy>=2.0.51",
+]
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]

@@ -1,11 +1,11 @@
 import pytest
 
-from sqlqb import sqlite
+from sqlqb import sqlite3
 
 
 @pytest.fixture
 def conn():
-    c = sqlite.connect(":memory:")
+    c = sqlite3.connect(":memory:")
     c.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
     c.executemany("INSERT INTO users VALUES (?, ?, ?)", [(1, "Alice", 30), (2, "Bob", 17), (3, "Carol", 25)])
     c.commit()
@@ -101,7 +101,7 @@ class TestDelete:
 
     def test_delete_with_limit_not_supported(self, conn):
         # NOTE: sqlite library of python does not support LIMIT in delete queries
-        import sqlite3
+        import sqlite3 as stdlib_sqlite3
 
-        with pytest.raises(sqlite3.OperationalError):
+        with pytest.raises(stdlib_sqlite3.OperationalError):
             conn.Delete().From("users").Limit(2).execute()

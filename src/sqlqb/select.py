@@ -3,22 +3,20 @@ import io
 
 class Select:
     def __init__(self, *args: str):
-        self.__columns: list[str] = list(args)
+        self.__columns: tuple[str] = args
         self.__table: str | None = None
-        self.__wheres: list[str] = []
-        self.__where_params: list = []
-        self.__named_params: dict = {}
         self.__joins: list[str] = []
-        self.__join_params: list = []
+        self.__wheres: list[str] = []
         self.__orderby: list[tuple[str, str]] = []
         self.__groupby: list[str] = []
         self.__limit: int | None = None
         self.__offset: int | None = None
+        self.__params: dict = {}
 
     def Columns(self, *columns: str) -> "Select":
         if not columns:
             raise ValueError("error: specify at least one column")
-        self.__columns = list(columns)
+        self.__columns = columns
         return self
 
     def From(self, table: str) -> "Select":
@@ -27,32 +25,14 @@ class Select:
         self.__table = table
         return self
 
-    def Join(self, join: str, *args, **kwargs) -> "Select":
-        if args and kwargs:
-            raise ValueError("error: cannot mix positional and named params")
-        if args and self.__named_params:
-            raise ValueError("error: cannot mix positional and named params")
-        if kwargs and (self.__where_params or self.__join_params):
-            raise ValueError("error: cannot mix positional and named params")
+    def Join(self, join: str, **kwargs) -> "Select":
         self.__joins.append(join)
-        if kwargs:
-            self.__named_params.update(kwargs)
-        else:
-            self.__join_params += list(args)
+        self.__params.update(kwargs)
         return self
 
-    def Where(self, condition: str, *args, **kwargs) -> "Select":
-        if args and kwargs:
-            raise ValueError("error: cannot mix positional and named params")
-        if args and self.__named_params:
-            raise ValueError("error: cannot mix positional and named params")
-        if kwargs and (self.__where_params or self.__join_params):
-            raise ValueError("error: cannot mix positional and named params")
+    def Where(self, condition: str, **kwargs) -> "Select":
         self.__wheres.append(condition)
-        if kwargs:
-            self.__named_params.update(kwargs)
-        else:
-            self.__where_params += list(args)
+        self.__params.update(kwargs)
         return self
 
     def OrderBy(self, column: str, direction: str = "ASC") -> "Select":
@@ -74,19 +54,18 @@ class Select:
         return self
 
     @property
-    def params(self) -> list | dict:
-        if self.__named_params:
-            return self.__named_params
-        return self.__join_params + self.__where_params
+    def params(self) -> dict:
+        return self.__params
 
     @property
     def sql(self) -> str:
+        if not self.__table or not str(self.__table).strip():
+            raise ValueError("error: table name must not be empty")
         sql = io.StringIO()
         sql.write("SELECT ")
         sql.write(", ".join(self.__columns or "*"))
-        if self.__table:
-            sql.write(" FROM ")
-            sql.write(self.__table)
+        sql.write(" FROM ")
+        sql.write(self.__table)
         if self.__joins:
             sql.write(" ")
             sql.write(" ".join(self.__joins))

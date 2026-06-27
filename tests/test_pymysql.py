@@ -33,9 +33,10 @@ class TestSelect:
 
     def test_execute_calls_cursor_execute_with_sql_and_params(self, mock_conn):
         conn, cursor = mock_conn
-        q = Select(conn, "name").From("users").Where("id = ?", 1)
+        q = Select(conn, "name").From("users").Where("id = :id", id=1)
         q.execute()
-        cursor.execute.assert_called_once_with(q.sql, q.params)
+        expected_sql, expected_params = _to_pymysql(q.sql, q.params)
+        cursor.execute.assert_called_once_with(expected_sql, expected_params)
 
     def test_execute_does_not_use_context_manager(self, mock_conn):
         conn, cursor = mock_conn
@@ -45,20 +46,21 @@ class TestSelect:
     def test_fetchone_returns_result(self, mock_conn):
         conn, cursor = mock_conn
         cursor.fetchone.return_value = {"id": 1, "name": "Alice"}
-        result = Select(conn, "id", "name").From("users").Where("id = ?", 1).fetchone()
+        result = Select(conn, "id", "name").From("users").Where("id = :id", id=1).fetchone()
         assert result == {"id": 1, "name": "Alice"}
 
     def test_fetchone_returns_none_when_no_row(self, mock_conn):
         conn, cursor = mock_conn
         cursor.fetchone.return_value = None
-        result = Select(conn, "id").From("users").Where("id = ?", 999).fetchone()
+        result = Select(conn, "id").From("users").Where("id = :id", id=999).fetchone()
         assert result is None
 
     def test_fetchone_calls_cursor_execute(self, mock_conn):
         conn, cursor = mock_conn
-        q = Select(conn, "name").From("users").Where("id = ?", 1)
+        q = Select(conn, "name").From("users").Where("id = :id", id=1)
         q.fetchone()
-        cursor.execute.assert_called_once_with(q.sql, q.params)
+        expected_sql, expected_params = _to_pymysql(q.sql, q.params)
+        cursor.execute.assert_called_once_with(expected_sql, expected_params)
 
     def test_fetchone_uses_context_manager(self, mock_conn):
         conn, cursor = mock_conn
@@ -90,14 +92,15 @@ class TestSelect:
 
     def test_multiple_where_params_passed_correctly(self, mock_conn):
         conn, cursor = mock_conn
-        q = Select(conn, "name").From("users").Where("age > ?", 18).Where("active = ?", True)
+        q = Select(conn, "name").From("users").Where("age > :age", age=18).Where("active = :active", active=True)
         q.fetchall()
-        cursor.execute.assert_called_once_with(q.sql, [18, True])
+        expected_sql, expected_params = _to_pymysql(q.sql, q.params)
+        cursor.execute.assert_called_once_with(expected_sql, expected_params)
 
     def test_chaining_with_order_and_limit(self, mock_conn):
         conn, cursor = mock_conn
         cursor.fetchall.return_value = [{"name": "Alice"}]
-        result = Select(conn, "name").From("users").Where("age >= ?", 18).OrderBy("name").Limit(1).fetchall()
+        result = Select(conn, "name").From("users").Where("age >= :age", age=18).OrderBy("name").Limit(1).fetchall()
         assert result == [{"name": "Alice"}]
 
 
@@ -130,14 +133,15 @@ class TestUpdate:
     def test_execute_returns_rowcount(self, mock_conn):
         conn, cursor = mock_conn
         cursor.rowcount = 1
-        count = Update(conn, "users").Set(name="Alice").Where("id = ?", 1).execute()
+        count = Update(conn, "users").Set(name="Alice").Where("id = :id", id=1).execute()
         assert count == 1
 
     def test_execute_calls_cursor_execute(self, mock_conn):
         conn, cursor = mock_conn
-        q = Update(conn, "users").Set(name="Alice").Where("id = ?", 1)
+        q = Update(conn, "users").Set(name="Alice").Where("id = :id", id=1)
         q.execute()
-        cursor.execute.assert_called_once_with(q.sql, q.params)
+        expected_sql, expected_params = _to_pymysql(q.sql, q.params)
+        cursor.execute.assert_called_once_with(expected_sql, expected_params)
 
     def test_execute_uses_context_manager(self, mock_conn):
         conn, cursor = mock_conn
@@ -153,9 +157,10 @@ class TestUpdate:
     def test_execute_multiple_set_columns(self, mock_conn):
         conn, cursor = mock_conn
         cursor.rowcount = 1
-        q = Update(conn, "users").Set(name="Bob", age=20).Where("id = ?", 2)
+        q = Update(conn, "users").Set(name="Bob", age=20).Where("id = :id", id=2)
         count = q.execute()
-        cursor.execute.assert_called_once_with(q.sql, q.params)
+        expected_sql, expected_params = _to_pymysql(q.sql, q.params)
+        cursor.execute.assert_called_once_with(expected_sql, expected_params)
         assert count == 1
 
 
@@ -163,18 +168,19 @@ class TestDelete:
     def test_execute_returns_rowcount(self, mock_conn):
         conn, cursor = mock_conn
         cursor.rowcount = 1
-        count = Delete(conn).From("users").Where("id = ?", 1).execute()
+        count = Delete(conn).From("users").Where("id = :id", id=1).execute()
         assert count == 1
 
     def test_execute_calls_cursor_execute(self, mock_conn):
         conn, cursor = mock_conn
-        q = Delete(conn).From("users").Where("id = ?", 1)
+        q = Delete(conn).From("users").Where("id = :id", id=1)
         q.execute()
-        cursor.execute.assert_called_once_with(q.sql, q.params)
+        expected_sql, expected_params = _to_pymysql(q.sql, q.params)
+        cursor.execute.assert_called_once_with(expected_sql, expected_params)
 
     def test_execute_uses_context_manager(self, mock_conn):
         conn, cursor = mock_conn
-        Delete(conn).From("users").Where("id = ?", 1).execute()
+        Delete(conn).From("users").Where("id = :id", id=1).execute()
         cursor.__enter__.assert_called_once()
 
     def test_execute_no_where_returns_all_rowcount(self, mock_conn):
@@ -183,21 +189,8 @@ class TestDelete:
         count = Delete(conn).From("users").execute()
         assert count == 3
 
-    def test_execute_with_limit(self, mock_conn):
-        conn, cursor = mock_conn
-        cursor.rowcount = 2
-        q = Delete(conn).From("users").Limit(2)
-        count = q.execute()
-        cursor.execute.assert_called_once_with(q.sql, q.params)
-        assert count == 2
-
 
 class TestToPymysql:
-    def test_list_params_sql_unchanged(self):
-        sql, params = _to_pymysql("SELECT * FROM t WHERE id = ?", [1])
-        assert sql == "SELECT * FROM t WHERE id = ?"
-        assert params == [1]
-
     def test_dict_params_converts_placeholders(self):
         sql, params = _to_pymysql(
             "SELECT * FROM t WHERE id = :id AND name = :name",

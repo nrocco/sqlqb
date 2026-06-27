@@ -29,7 +29,12 @@ class Insert(_Insert):
         self.__connection = connection
 
     def execute(self) -> int:
-        return self.__connection.execute(self.sql, self.params).rowcount
+        if len(self.params) == 1:
+            return self.__connection.execute(self.sql, self.params[0]).rowcount
+        return self.__connection.executemany(self.sql, self.params).rowcount
+
+    def executemany(self) -> int:
+        return self.execute()
 
 
 class Update(_Update):

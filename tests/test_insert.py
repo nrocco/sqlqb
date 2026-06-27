@@ -6,7 +6,7 @@ from sqlqb import Insert
 class TestInsertBasic:
     def test_single_row(self):
         q = Insert().Into("users").Values(name="Alice", email="alice@example.com")
-        assert q.sql == "INSERT INTO users (name, email) VALUES (?, ?)"
+        assert q.sql == "INSERT INTO users (name, email) VALUES (:name, :email)"
 
     def test_str_equals_sql(self):
         q = Insert().Into("users").Values(name="Alice")
@@ -14,17 +14,17 @@ class TestInsertBasic:
 
     def test_params_single_row(self):
         q = Insert().Into("users").Values(name="Alice", email="alice@example.com")
-        assert q.params == ["Alice", "alice@example.com"]
+        assert q.params == [{"name": "Alice", "email": "alice@example.com"}]
 
     def test_multiple_rows(self):
         q = Insert().Into("users").Values(name="Alice").Values(name="Bob")
-        assert q.sql == "INSERT INTO users (name) VALUES (?), (?)"
-        assert q.params == ["Alice", "Bob"]
+        assert q.sql == "INSERT INTO users (name) VALUES (:name)"
+        assert q.params == [{"name": "Alice"}, {"name": "Bob"}]
 
     def test_multiple_columns_multiple_rows(self):
         q = Insert().Into("orders").Values(user_id=1, total=99).Values(user_id=2, total=50)
-        assert q.sql == "INSERT INTO orders (user_id, total) VALUES (?, ?), (?, ?)"
-        assert q.params == [1, 99, 2, 50]
+        assert q.sql == "INSERT INTO orders (user_id, total) VALUES (:user_id, :total)"
+        assert q.params == [{"user_id": 1, "total": 99}, {"user_id": 2, "total": 50}]
 
     def test_method_chaining_returns_insert(self):
         q = Insert()
@@ -57,4 +57,4 @@ class TestInsertBasic:
 
     def test_various_value_types(self):
         q = Insert().Into("events").Values(user_id=42, active=True, score=3.14, label=None)
-        assert q.params == [42, True, 3.14, None]
+        assert q.params == [{"user_id": 42, "active": True, "score": 3.14, "label": None}]

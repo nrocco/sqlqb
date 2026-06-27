@@ -32,6 +32,10 @@ class TestSelectBasic:
         q = Select("id").From("orders")
         assert "FROM orders" in q.sql
 
+    def test_table_empty_raises(self):
+        with pytest.raises(ValueError):
+            Select("1").sql
+
     def test_columns_empty_raises(self):
         with pytest.raises(ValueError):
             Select().Columns()
@@ -58,23 +62,19 @@ class TestSelectBasic:
 
 class TestWhere:
     def test_single_where(self):
-        q = Select("id").From("users").Where("id = ?", 1)
-        assert q.sql == "SELECT id FROM users WHERE id = ?"
-        assert q.params == [1]
+        q = Select("id").From("users").Where("id = :id", id=1)
+        assert q.sql == "SELECT id FROM users WHERE id = :id"
+        assert q.params == {"id": 1}
 
     def test_multiple_wheres_joined_with_and(self):
-        q = Select("id").From("users").Where("active = ?", True).Where("role = ?", "admin")
-        assert q.sql == "SELECT id FROM users WHERE active = ? AND role = ?"
-        assert q.params == [True, "admin"]
+        q = Select("id").From("users").Where("active = :active", active=True).Where("role = :role", role="admin")
+        assert q.sql == "SELECT id FROM users WHERE active = :active AND role = :role"
+        assert q.params == {"active": True, "role": "admin"}
 
     def test_where_no_params(self):
         q = Select("id").From("users").Where("deleted_at IS NULL")
         assert "WHERE deleted_at IS NULL" in q.sql
-        assert q.params == []
-
-    def test_where_multiple_params(self):
-        q = Select().From("t").Where("a = ? AND b = ?", 1, 2)
-        assert q.params == [1, 2]
+        assert q.params == {}
 
     def test_no_where_clause_absent(self):
         q = Select("id").From("users")
@@ -92,22 +92,17 @@ class TestJoin:
         assert "JOIN items i ON i.order_id = o.id" in q.sql
 
     def test_join_with_params(self):
-        q = Select("u.id").From("users u").Join("JOIN orders o ON o.user_id = u.id AND o.status = ?", "active")
-        assert q.params == ["active"]
+        q = Select("u.id").From("users u").Join("JOIN orders o ON o.user_id = u.id AND o.status = :status", status="active")
+        assert q.params == {"status": "active"}
 
-    def test_join_params_combined_with_where_params(self):
-        q = Select("u.id").From("users u").Join("JOIN orders o ON o.user_id = u.id AND o.type = ?", "sale").Where("u.active = ?", True)
-        assert q.params == ["sale", True]
-
-    def test_where_before_join_params_in_sql_order(self):
-        # WHERE called first, then Join — params must match SQL clause order (JOIN before WHERE)
+    def test_join_and_where_params(self):
         q = (
             Select("u.id")
             .From("users u")
-            .Where("u.active = ?", True)
-            .Join("JOIN orders o ON o.user_id = u.id AND o.type = ?", "sale")
+            .Join("JOIN orders o ON o.user_id = u.id AND o.type = :type", type="sale")
+            .Where("u.active = :active", active=True)
         )
-        assert q.params == ["sale", True]
+        assert q.params == {"type": "sale", "active": True}
 
     def test_no_join_absent(self):
         q = Select("id").From("users")
@@ -188,17 +183,33 @@ class TestLimitOffset:
 class TestParams:
     def test_params_empty_by_default(self):
         q = Select("id").From("users")
-        assert q.params == []
+        assert q.params == {}
 
     def test_params_accumulate_across_joins_and_wheres(self):
-        q = Select("id").From("users").Join("JOIN t ON t.id = users.t_id AND t.x = ?", 42).Where("active = ?", True).Where("role IN (?, ?)", "admin", "mod")
-        assert q.params == [42, True, "admin", "mod"]
+        q = (
+            Select("id")
+            .From("users")
+            .Join("JOIN t ON t.id = users.t_id AND t.x = :x", x=42)
+            .Where("active = :active", active=True)
+            .Where("role = :role", role="admin")
+        )
+        assert q.params == {"x": 42, "active": True, "role": "admin"}
 
 
 class TestClauseOrdering:
     def test_full_query_clause_order(self):
-        sql = Select("u.id", "u.name").From("users u").Join("JOIN orders o ON o.user_id = u.id").Where("u.active = ?", True).GroupBy("u.id", "u.name").OrderBy("u.name").Limit(25).Offset(50).sql
-        assert sql == ("SELECT u.id, u.name FROM users u JOIN orders o ON o.user_id = u.id WHERE u.active = ? GROUP BY u.id, u.name ORDER BY u.name ASC LIMIT 25 OFFSET 50")
+        sql = (
+            Select("u.id", "u.name")
+            .From("users u")
+            .Join("JOIN orders o ON o.user_id = u.id")
+            .Where("u.active = :active", active=True)
+            .GroupBy("u.id", "u.name")
+            .OrderBy("u.name")
+            .Limit(25)
+            .Offset(50)
+            .sql
+        )
+        assert sql == "SELECT u.id, u.name FROM users u JOIN orders o ON o.user_id = u.id WHERE u.active = :active GROUP BY u.id, u.name ORDER BY u.name ASC LIMIT 25 OFFSET 50"
 
     def test_group_by_before_order_by(self):
         sql = Select("a").From("t").OrderBy("a").GroupBy("a").sql
@@ -217,45 +228,3 @@ class TestClauseOrdering:
         limit_pos = sql.index("LIMIT")
         offset_pos = sql.index("OFFSET")
         assert limit_pos < offset_pos
-
-
-class TestNamedParams:
-    def test_where_named_single(self):
-        q = Select("id").From("users").Where("id = :id", id=1)
-        assert q.sql == "SELECT id FROM users WHERE id = :id"
-        assert q.params == {"id": 1}
-
-    def test_where_named_multiple_calls(self):
-        q = Select("id").From("users").Where("age > :age", age=18).Where("active = :active", active=True)
-        assert q.params == {"age": 18, "active": True}
-
-    def test_where_named_no_params(self):
-        q = Select("id").From("users").Where("deleted_at IS NULL").Where("id = :id", id=1)
-        assert q.params == {"id": 1}
-
-    def test_join_named(self):
-        q = Select("u.id").From("users u").Join(
-            "JOIN orders o ON o.user_id = u.id AND o.status = :status", status="active"
-        )
-        assert q.params == {"status": "active"}
-
-    def test_join_and_where_named(self):
-        q = (
-            Select("u.id")
-            .From("users u")
-            .Join("JOIN orders o ON o.type = :type", type="sale")
-            .Where("u.active = :active", active=True)
-        )
-        assert q.params == {"type": "sale", "active": True}
-
-    def test_mix_positional_then_named_raises(self):
-        with pytest.raises(ValueError):
-            Select("id").From("users").Where("a = ?", 1).Where("b = :b", b=2)
-
-    def test_mix_named_then_positional_raises(self):
-        with pytest.raises(ValueError):
-            Select("id").From("users").Where("b = :b", b=2).Where("a = ?", 1)
-
-    def test_mix_within_single_call_raises(self):
-        with pytest.raises(ValueError):
-            Select("id").From("users").Where("a = ? AND b = :b", 1, b=2)

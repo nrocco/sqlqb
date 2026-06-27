@@ -9,34 +9,19 @@ from sqlqb import Update as _Update
 from sqlqb import Delete as _Delete
 
 
-def _bind(sql: str, params: list | dict) -> tuple[str, dict]:
-    """Convert params for SQLAlchemy text(): pass dicts through, replace ? with :p0/:p1/... for lists."""
-    if isinstance(params, dict):
-        return sql, params
-    named: dict = {}
-    for i, val in enumerate(params):
-        key = f"p{i}"
-        sql = sql.replace("?", f":{key}", 1)
-        named[key] = val
-    return sql, named
-
-
 class Select(_Select):
     def __init__(self, connection: _Connection, *args):
         super().__init__(*args)
         self.__connection = connection
 
     def execute(self):
-        sql, params = _bind(self.sql, self.params)
-        return self.__connection.execute(text(sql), params)
+        return self.__connection.execute(text(self.sql), self.params)
 
     def fetchone(self):
-        sql, params = _bind(self.sql, self.params)
         row = self.execute().mappings().fetchone()
         return dict(row) if row is not None else None
 
     def fetchall(self) -> list:
-        sql, params = _bind(self.sql, self.params)
         return [dict(row) for row in self.execute().mappings()]
 
 
@@ -46,8 +31,7 @@ class Insert(_Insert):
         self.__connection = connection
 
     def execute(self) -> int:
-        sql, params = _bind(self.sql, self.params)
-        return self.__connection.execute(text(sql), params).rowcount
+        return self.__connection.execute(text(self.sql), self.params).rowcount
 
 
 class Update(_Update):
@@ -56,8 +40,7 @@ class Update(_Update):
         self.__connection = connection
 
     def execute(self) -> int:
-        sql, params = _bind(self.sql, self.params)
-        return self.__connection.execute(text(sql), params).rowcount
+        return self.__connection.execute(text(self.sql), self.params).rowcount
 
 
 class Delete(_Delete):
@@ -66,8 +49,7 @@ class Delete(_Delete):
         self.__connection = connection
 
     def execute(self) -> int:
-        sql, params = _bind(self.sql, self.params)
-        return self.__connection.execute(text(sql), params).rowcount
+        return self.__connection.execute(text(self.sql), self.params).rowcount
 
 
 class Connection(_Connection):

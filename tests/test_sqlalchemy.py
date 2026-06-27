@@ -107,23 +107,23 @@ class TestSelect:
         assert rows == [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}, {"id": 3, "name": "Carol"}]
 
     def test_fetchone(self, conn):
-        row = conn.Select("name").From("users").Where("id = ?", 1).fetchone()
+        row = conn.Select("name").From("users").Where("id = :id", id=1).fetchone()
         assert row == {"name": "Alice"}
 
     def test_fetchone_returns_none_when_no_row(self, conn):
-        row = conn.Select("name").From("users").Where("id = ?", 999).fetchone()
+        row = conn.Select("name").From("users").Where("id = :id", id=999).fetchone()
         assert row is None
 
     def test_fetchall_returns_empty_list(self, conn):
-        rows = conn.Select("name").From("users").Where("id = ?", 999).fetchall()
+        rows = conn.Select("name").From("users").Where("id = :id", id=999).fetchall()
         assert rows == []
 
     def test_where_single_param(self, conn):
-        rows = conn.Select("name").From("users").Where("age >= ?", 18).fetchall()
+        rows = conn.Select("name").From("users").Where("age >= :age", age=18).fetchall()
         assert rows == [{"name": "Alice"}, {"name": "Carol"}]
 
     def test_where_multiple_params(self, conn):
-        rows = conn.Select("name").From("users").Where("age >= ?", 18).Where("age <= ?", 29).fetchall()
+        rows = conn.Select("name").From("users").Where("age >= :min_age", min_age=18).Where("age <= :max_age", max_age=29).fetchall()
         assert rows == [{"name": "Carol"}]
 
     def test_order_by_asc(self, conn):
@@ -148,7 +148,7 @@ class TestSelect:
         assert type(rows[0]) is dict
 
     def test_fetchone_returns_plain_dict(self, conn):
-        row = conn.Select("id").From("users").Where("id = ?", 1).fetchone()
+        row = conn.Select("id").From("users").Where("id = :id", id=1).fetchone()
         assert type(row) is dict
 
 
@@ -164,7 +164,7 @@ class TestInsert:
 
     def test_inserted_row_is_queryable(self, conn):
         conn.Insert().Into("users").Values(id=4, name="Dave", age=40).execute()
-        row = conn.Select("name").From("users").Where("id = ?", 4).fetchone()
+        row = conn.Select("name").From("users").Where("id = :id", id=4).fetchone()
         assert row == {"name": "Dave"}
 
     def test_insert_multiple_rows(self, conn):
@@ -179,17 +179,17 @@ class TestInsert:
 
 class TestUpdate:
     def test_execute_returns_rowcount(self, conn):
-        count = conn.Update("users").Set(name="Alicia").Where("id = ?", 1).execute()
+        count = conn.Update("users").Set(name="Alicia").Where("id = :id", id=1).execute()
         assert count == 1
 
     def test_update_is_reflected(self, conn):
-        conn.Update("users").Set(name="Alicia").Where("id = ?", 1).execute()
-        row = conn.Select("name").From("users").Where("id = ?", 1).fetchone()
+        conn.Update("users").Set(name="Alicia").Where("id = :id", id=1).execute()
+        row = conn.Select("name").From("users").Where("id = :id", id=1).fetchone()
         assert row == {"name": "Alicia"}
 
     def test_update_multiple_columns(self, conn):
-        conn.Update("users").Set(name="Bobby", age=18).Where("id = ?", 2).execute()
-        row = conn.Select("name", "age").From("users").Where("id = ?", 2).fetchone()
+        conn.Update("users").Set(name="Bobby", age=18).Where("id = :id", id=2).execute()
+        row = conn.Select("name", "age").From("users").Where("id = :id", id=2).fetchone()
         assert row == {"name": "Bobby", "age": 18}
 
     def test_update_no_where_affects_all(self, conn):
@@ -197,7 +197,7 @@ class TestUpdate:
         assert count == 3
 
     def test_update_affects_correct_rows_only(self, conn):
-        conn.Update("users").Set(age=99).Where("id = ?", 1).execute()
+        conn.Update("users").Set(age=99).Where("id = :id", id=1).execute()
         rows = conn.Select("id", "age").From("users").fetchall()
         assert rows == [{"id": 1, "age": 99}, {"id": 2, "age": 17}, {"id": 3, "age": 25}]
 
@@ -210,13 +210,13 @@ class TestUpdate:
 class TestDelete:
     def test_execute_returns_rowcount(self, conn):
         conn.Insert().Into("users").Values(id=4, name="Temp", age=1).execute()
-        count = conn.Delete().From("users").Where("id = ?", 4).execute()
+        count = conn.Delete().From("users").Where("id = :id", id=4).execute()
         assert count == 1
 
     def test_deleted_row_is_gone(self, conn):
         conn.Insert().Into("users").Values(id=4, name="Temp", age=1).execute()
-        conn.Delete().From("users").Where("id = ?", 4).execute()
-        row = conn.Select("*").From("users").Where("id = ?", 4).fetchone()
+        conn.Delete().From("users").Where("id = :id", id=4).execute()
+        row = conn.Select("*").From("users").Where("id = :id", id=4).fetchone()
         assert row is None
 
     def test_delete_no_where_clears_table(self, conn):

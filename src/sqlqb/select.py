@@ -6,9 +6,10 @@ class Select:
         self.__columns: list[str] = list(args)
         self.__table: str | None = None
         self.__wheres: list[str] = []
-        self.__params: list = []
+        self.__where_params: list = []
         self.__named_params: dict = {}
         self.__joins: list[str] = []
+        self.__join_params: list = []
         self.__orderby: list[tuple[str, str]] = []
         self.__groupby: list[str] = []
         self.__limit: int | None = None
@@ -31,13 +32,13 @@ class Select:
             raise ValueError("error: cannot mix positional and named params")
         if args and self.__named_params:
             raise ValueError("error: cannot mix positional and named params")
-        if kwargs and self.__params:
+        if kwargs and (self.__where_params or self.__join_params):
             raise ValueError("error: cannot mix positional and named params")
         self.__joins.append(join)
         if kwargs:
             self.__named_params.update(kwargs)
         else:
-            self.__params += list(args)
+            self.__join_params += list(args)
         return self
 
     def Where(self, condition: str, *args, **kwargs) -> "Select":
@@ -45,13 +46,13 @@ class Select:
             raise ValueError("error: cannot mix positional and named params")
         if args and self.__named_params:
             raise ValueError("error: cannot mix positional and named params")
-        if kwargs and self.__params:
+        if kwargs and (self.__where_params or self.__join_params):
             raise ValueError("error: cannot mix positional and named params")
         self.__wheres.append(condition)
         if kwargs:
             self.__named_params.update(kwargs)
         else:
-            self.__params += list(args)
+            self.__where_params += list(args)
         return self
 
     def OrderBy(self, column: str, direction: str = "ASC") -> "Select":
@@ -76,7 +77,7 @@ class Select:
     def params(self) -> list | dict:
         if self.__named_params:
             return self.__named_params
-        return self.__params
+        return self.__join_params + self.__where_params
 
     @property
     def sql(self) -> str:

@@ -99,6 +99,16 @@ class TestJoin:
         q = Select("u.id").From("users u").Join("JOIN orders o ON o.user_id = u.id AND o.type = ?", "sale").Where("u.active = ?", True)
         assert q.params == ["sale", True]
 
+    def test_where_before_join_params_in_sql_order(self):
+        # WHERE called first, then Join — params must match SQL clause order (JOIN before WHERE)
+        q = (
+            Select("u.id")
+            .From("users u")
+            .Where("u.active = ?", True)
+            .Join("JOIN orders o ON o.user_id = u.id AND o.type = ?", "sale")
+        )
+        assert q.params == ["sale", True]
+
     def test_no_join_absent(self):
         q = Select("id").From("users")
         assert "JOIN" not in q.sql

@@ -79,3 +79,23 @@ class TestDeleteChaining:
         q = Delete().From("logs").Where("level = ?", "debug").Limit(500)
         assert q.sql == "DELETE FROM logs WHERE level = ? LIMIT 500"
         assert q.params == ["debug"]
+
+
+class TestNamedParams:
+    def test_where_named_single(self):
+        q = Delete().From("users").Where("id = :id", id=1)
+        assert q.sql == "DELETE FROM users WHERE id = :id"
+        assert q.params == {"id": 1}
+
+    def test_where_named_multiple_calls(self):
+        q = Delete().From("users").Where("active = :active", active=False).Where("role = :role", role="guest")
+        assert q.sql == "DELETE FROM users WHERE active = :active AND role = :role"
+        assert q.params == {"active": False, "role": "guest"}
+
+    def test_mix_positional_then_named_raises(self):
+        with pytest.raises(ValueError):
+            Delete().From("users").Where("a = ?", 1).Where("b = :b", b=2)
+
+    def test_mix_named_then_positional_raises(self):
+        with pytest.raises(ValueError):
+            Delete().From("users").Where("b = :b", b=2).Where("a = ?", 1)

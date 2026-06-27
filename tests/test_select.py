@@ -207,3 +207,45 @@ class TestClauseOrdering:
         limit_pos = sql.index("LIMIT")
         offset_pos = sql.index("OFFSET")
         assert limit_pos < offset_pos
+
+
+class TestNamedParams:
+    def test_where_named_single(self):
+        q = Select("id").From("users").Where("id = :id", id=1)
+        assert q.sql == "SELECT id FROM users WHERE id = :id"
+        assert q.params == {"id": 1}
+
+    def test_where_named_multiple_calls(self):
+        q = Select("id").From("users").Where("age > :age", age=18).Where("active = :active", active=True)
+        assert q.params == {"age": 18, "active": True}
+
+    def test_where_named_no_params(self):
+        q = Select("id").From("users").Where("deleted_at IS NULL").Where("id = :id", id=1)
+        assert q.params == {"id": 1}
+
+    def test_join_named(self):
+        q = Select("u.id").From("users u").Join(
+            "JOIN orders o ON o.user_id = u.id AND o.status = :status", status="active"
+        )
+        assert q.params == {"status": "active"}
+
+    def test_join_and_where_named(self):
+        q = (
+            Select("u.id")
+            .From("users u")
+            .Join("JOIN orders o ON o.type = :type", type="sale")
+            .Where("u.active = :active", active=True)
+        )
+        assert q.params == {"type": "sale", "active": True}
+
+    def test_mix_positional_then_named_raises(self):
+        with pytest.raises(ValueError):
+            Select("id").From("users").Where("a = ?", 1).Where("b = :b", b=2)
+
+    def test_mix_named_then_positional_raises(self):
+        with pytest.raises(ValueError):
+            Select("id").From("users").Where("b = :b", b=2).Where("a = ?", 1)
+
+    def test_mix_within_single_call_raises(self):
+        with pytest.raises(ValueError):
+            Select("id").From("users").Where("a = ? AND b = :b", 1, b=2)

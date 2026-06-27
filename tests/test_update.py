@@ -98,3 +98,27 @@ class TestUpdateChaining:
         q = Update("users").Set(role="admin", active=True).Where("id = ?", 42).Limit(1)
         assert q.sql == "UPDATE users SET role = ?, active = ? WHERE id = ? LIMIT 1"
         assert q.params == ["admin", True, 42]
+
+
+class TestNamedParams:
+    def test_named_where_triggers_named_set(self):
+        q = Update("users").Set(name="Bob").Where("id = :id", id=1)
+        assert q.sql == "UPDATE users SET name = :name WHERE id = :id"
+        assert q.params == {"name": "Bob", "id": 1}
+
+    def test_named_multiple_set_columns(self):
+        q = Update("users").Set(name="Bob", age=25).Where("id = :id", id=1)
+        assert q.sql == "UPDATE users SET name = :name, age = :age WHERE id = :id"
+        assert q.params == {"name": "Bob", "age": 25, "id": 1}
+
+    def test_named_multiple_where_calls(self):
+        q = Update("users").Set(active=False).Where("role = :role", role="guest").Where("id = :id", id=7)
+        assert q.params == {"active": False, "role": "guest", "id": 7}
+
+    def test_mix_positional_then_named_raises(self):
+        with pytest.raises(ValueError):
+            Update("users").Set(name="Bob").Where("a = ?", 1).Where("b = :b", b=2)
+
+    def test_mix_named_then_positional_raises(self):
+        with pytest.raises(ValueError):
+            Update("users").Set(name="Bob").Where("b = :b", b=2).Where("a = ?", 1)

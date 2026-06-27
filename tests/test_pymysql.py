@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 from sqlqb import pymysql
-from sqlqb.pymysql import Select, Insert, Update, Delete, Connection
+from sqlqb.pymysql import Select, Insert, Update, Delete, Connection, _to_pymysql
 from pymysql.cursors import DictCursor
 
 
@@ -190,6 +190,26 @@ class TestDelete:
         count = q.execute()
         cursor.execute.assert_called_once_with(q.sql, q.params)
         assert count == 2
+
+
+class TestToPymysql:
+    def test_list_params_sql_unchanged(self):
+        sql, params = _to_pymysql("SELECT * FROM t WHERE id = ?", [1])
+        assert sql == "SELECT * FROM t WHERE id = ?"
+        assert params == [1]
+
+    def test_dict_params_converts_placeholders(self):
+        sql, params = _to_pymysql(
+            "SELECT * FROM t WHERE id = :id AND name = :name",
+            {"id": 1, "name": "Alice"},
+        )
+        assert sql == "SELECT * FROM t WHERE id = %(id)s AND name = %(name)s"
+        assert params == {"id": 1, "name": "Alice"}
+
+    def test_dict_params_single_placeholder(self):
+        sql, params = _to_pymysql("DELETE FROM t WHERE id = :id", {"id": 42})
+        assert sql == "DELETE FROM t WHERE id = %(id)s"
+        assert params == {"id": 42}
 
 
 class TestConnection:

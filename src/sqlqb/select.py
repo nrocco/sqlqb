@@ -83,8 +83,9 @@ class Select:
         sql = io.StringIO()
         sql.write("SELECT ")
         sql.write(", ".join(self.__columns or "*"))
-        sql.write(" FROM ")
-        sql.write(self.__table)
+        if self.__table:
+            sql.write(" FROM ")
+            sql.write(self.__table)
         if self.__joins:
             sql.write(" ")
             sql.write(" ".join(self.__joins))

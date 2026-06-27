@@ -7,6 +7,7 @@ class Select:
         self.__table: str | None = None
         self.__wheres: list[str] = []
         self.__params: list = []
+        self.__named_params: dict = {}
         self.__joins: list[str] = []
         self.__orderby: list[tuple[str, str]] = []
         self.__groupby: list[str] = []
@@ -25,14 +26,32 @@ class Select:
         self.__table = table
         return self
 
-    def Join(self, join: str, *args) -> "Select":
+    def Join(self, join: str, *args, **kwargs) -> "Select":
+        if args and kwargs:
+            raise ValueError("error: cannot mix positional and named params")
+        if args and self.__named_params:
+            raise ValueError("error: cannot mix positional and named params")
+        if kwargs and self.__params:
+            raise ValueError("error: cannot mix positional and named params")
         self.__joins.append(join)
-        self.__params += args
+        if kwargs:
+            self.__named_params.update(kwargs)
+        else:
+            self.__params += list(args)
         return self
 
-    def Where(self, condition: str, *args) -> "Select":
+    def Where(self, condition: str, *args, **kwargs) -> "Select":
+        if args and kwargs:
+            raise ValueError("error: cannot mix positional and named params")
+        if args and self.__named_params:
+            raise ValueError("error: cannot mix positional and named params")
+        if kwargs and self.__params:
+            raise ValueError("error: cannot mix positional and named params")
         self.__wheres.append(condition)
-        self.__params += args
+        if kwargs:
+            self.__named_params.update(kwargs)
+        else:
+            self.__params += list(args)
         return self
 
     def OrderBy(self, column: str, direction: str = "ASC") -> "Select":
@@ -54,7 +73,9 @@ class Select:
         return self
 
     @property
-    def params(self) -> list:
+    def params(self) -> list | dict:
+        if self.__named_params:
+            return self.__named_params
         return self.__params
 
     @property

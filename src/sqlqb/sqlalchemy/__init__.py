@@ -9,8 +9,10 @@ from sqlqb import Update as _Update
 from sqlqb import Delete as _Delete
 
 
-def _bind(sql: str, params: list) -> tuple[str, dict]:
-    """Replace ? placeholders with :p0, :p1, ... for SQLAlchemy text()."""
+def _bind(sql: str, params: list | dict) -> tuple[str, dict]:
+    """Convert params for SQLAlchemy text(): pass dicts through, replace ? with :p0/:p1/... for lists."""
+    if isinstance(params, dict):
+        return sql, params
     named: dict = {}
     for i, val in enumerate(params):
         key = f"p{i}"

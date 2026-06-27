@@ -1,3 +1,5 @@
+import re
+
 from pymysql.connections import Connection as _Connection
 from pymysql.cursors import DictCursor
 
@@ -7,25 +9,35 @@ from sqlqb import Update as _Update
 from sqlqb import Delete as _Delete
 
 
+def _to_pymysql(sql: str, params: list | dict) -> tuple[str, list | dict]:
+    """Convert :name placeholders to %(name)s style for PyMySQL when params is a dict."""
+    if isinstance(params, dict):
+        sql = re.sub(r":([a-zA-Z_][a-zA-Z0-9_]*)", r"%(\1)s", sql)
+    return sql, params
+
+
 class Select(_Select):
     def __init__(self, connection: _Connection, *args):
         super().__init__(*args)
         self.__connection = connection
 
     def execute(self):
+        sql, params = _to_pymysql(self.sql, self.params)
         cursor = self.__connection.cursor()
-        cursor.execute(self.sql, self.params)
+        cursor.execute(sql, params)
         return cursor
 
     def fetchone(self):
+        sql, params = _to_pymysql(self.sql, self.params)
         with self.__connection.cursor() as cursor:
-            cursor.execute(self.sql, self.params)
+            cursor.execute(sql, params)
             result = cursor.fetchone()
         return result
 
     def fetchall(self):
+        sql, params = _to_pymysql(self.sql, self.params)
         with self.__connection.cursor() as cursor:
-            cursor.execute(self.sql, self.params)
+            cursor.execute(sql, params)
             result = cursor.fetchall()
         return result
 
@@ -36,8 +48,9 @@ class Insert(_Insert):
         self.__connection = connection
 
     def execute(self) -> int:
+        sql, params = _to_pymysql(self.sql, self.params)
         with self.__connection.cursor() as cursor:
-            cursor.execute(self.sql, self.params)
+            cursor.execute(sql, params)
             return cursor.rowcount
 
 
@@ -47,8 +60,9 @@ class Update(_Update):
         self.__connection = connection
 
     def execute(self) -> int:
+        sql, params = _to_pymysql(self.sql, self.params)
         with self.__connection.cursor() as cursor:
-            cursor.execute(self.sql, self.params)
+            cursor.execute(sql, params)
             return cursor.rowcount
 
 
@@ -58,8 +72,9 @@ class Delete(_Delete):
         self.__connection = connection
 
     def execute(self) -> int:
+        sql, params = _to_pymysql(self.sql, self.params)
         with self.__connection.cursor() as cursor:
-            cursor.execute(self.sql, self.params)
+            cursor.execute(sql, params)
             return cursor.rowcount
 
 

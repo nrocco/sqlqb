@@ -6,6 +6,7 @@ class Delete:
         self.__table: str | None = None
         self.__wheres: list[str] = []
         self.__params: list = []
+        self.__named_params: dict = {}
         self.__limit: int | None = None
 
     def From(self, table: str) -> "Delete":
@@ -14,9 +15,18 @@ class Delete:
         self.__table = table
         return self
 
-    def Where(self, condition: str, *args) -> "Delete":
+    def Where(self, condition: str, *args, **kwargs) -> "Delete":
+        if args and kwargs:
+            raise ValueError("error: cannot mix positional and named params")
+        if args and self.__named_params:
+            raise ValueError("error: cannot mix positional and named params")
+        if kwargs and self.__params:
+            raise ValueError("error: cannot mix positional and named params")
         self.__wheres.append(condition)
-        self.__params += args
+        if kwargs:
+            self.__named_params.update(kwargs)
+        else:
+            self.__params += list(args)
         return self
 
     def Limit(self, limit: int) -> "Delete":
@@ -24,7 +34,9 @@ class Delete:
         return self
 
     @property
-    def params(self) -> list:
+    def params(self) -> list | dict:
+        if self.__named_params:
+            return self.__named_params
         return self.__params
 
     @property

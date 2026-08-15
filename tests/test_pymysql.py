@@ -1,9 +1,10 @@
-import pytest
 from unittest.mock import MagicMock, patch
 
-from sqlqb import pymysql
-from sqlqb.pymysql import Select, Insert, Update, Delete, Connection, _to_pymysql
+import pytest
 from pymysql.cursors import DictCursor
+
+from sqlqb import pymysql
+from sqlqb.pymysql import Connection, Delete, Insert, Select, Update, _to_pymysql
 
 
 @pytest.fixture

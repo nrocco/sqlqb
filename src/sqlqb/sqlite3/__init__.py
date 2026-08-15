@@ -2,10 +2,10 @@ from sqlite3 import Connection as _Connection
 from sqlite3 import Cursor as _Cursor
 from sqlite3 import connect as _connect
 
-from sqlqb import Select as _Select
-from sqlqb import Insert as _Insert
-from sqlqb import Update as _Update
 from sqlqb import Delete as _Delete
+from sqlqb import Insert as _Insert
+from sqlqb import Select as _Select
+from sqlqb import Update as _Update
 
 
 class Select(_Select):

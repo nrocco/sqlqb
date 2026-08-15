@@ -34,19 +34,19 @@ class TestSelectBasic:
 
     def test_table_empty_raises(self):
         with pytest.raises(ValueError):
-            Select("1").sql
+            _ = Select("1").sql
 
     def test_columns_empty_raises(self):
         with pytest.raises(ValueError):
-            Select().Columns()
+            _ = Select().Columns()
 
     def test_from_empty_raises(self):
         with pytest.raises(ValueError):
-            Select().From("")
+            _ = Select().From("")
 
     def test_from_blank_raises(self):
         with pytest.raises(ValueError):
-            Select().From("   ")
+            _ = Select().From("   ")
 
     def test_method_chaining_returns_select(self):
         q = Select()
@@ -96,12 +96,7 @@ class TestJoin:
         assert q.params == {"status": "active"}
 
     def test_join_and_where_params(self):
-        q = (
-            Select("u.id")
-            .From("users u")
-            .Join("JOIN orders o ON o.user_id = u.id AND o.type = :type", type="sale")
-            .Where("u.active = :active", active=True)
-        )
+        q = Select("u.id").From("users u").Join("JOIN orders o ON o.user_id = u.id AND o.type = :type", type="sale").Where("u.active = :active", active=True)
         assert q.params == {"type": "sale", "active": True}
 
     def test_no_join_absent(self):
@@ -186,29 +181,13 @@ class TestParams:
         assert q.params == {}
 
     def test_params_accumulate_across_joins_and_wheres(self):
-        q = (
-            Select("id")
-            .From("users")
-            .Join("JOIN t ON t.id = users.t_id AND t.x = :x", x=42)
-            .Where("active = :active", active=True)
-            .Where("role = :role", role="admin")
-        )
+        q = Select("id").From("users").Join("JOIN t ON t.id = users.t_id AND t.x = :x", x=42).Where("active = :active", active=True).Where("role = :role", role="admin")
         assert q.params == {"x": 42, "active": True, "role": "admin"}
 
 
 class TestClauseOrdering:
     def test_full_query_clause_order(self):
-        sql = (
-            Select("u.id", "u.name")
-            .From("users u")
-            .Join("JOIN orders o ON o.user_id = u.id")
-            .Where("u.active = :active", active=True)
-            .GroupBy("u.id", "u.name")
-            .OrderBy("u.name")
-            .Limit(25)
-            .Offset(50)
-            .sql
-        )
+        sql = Select("u.id", "u.name").From("users u").Join("JOIN orders o ON o.user_id = u.id").Where("u.active = :active", active=True).GroupBy("u.id", "u.name").OrderBy("u.name").Limit(25).Offset(50).sql
         assert sql == "SELECT u.id, u.name FROM users u JOIN orders o ON o.user_id = u.id WHERE u.active = :active GROUP BY u.id, u.name ORDER BY u.name ASC LIMIT 25 OFFSET 50"
 
     def test_group_by_before_order_by(self):

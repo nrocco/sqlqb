@@ -3,10 +3,10 @@ from sqlalchemy import text
 from sqlalchemy.engine import Connection as _Connection
 from sqlalchemy.engine import Engine as _Engine
 
-from sqlqb import Select as _Select
-from sqlqb import Insert as _Insert
-from sqlqb import Update as _Update
 from sqlqb import Delete as _Delete
+from sqlqb import Insert as _Insert
+from sqlqb import Select as _Select
+from sqlqb import Update as _Update
 
 
 class Select(_Select):

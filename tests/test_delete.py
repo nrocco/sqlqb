@@ -14,15 +14,15 @@ class TestDeleteBasic:
 
     def test_no_table_raises(self):
         with pytest.raises(ValueError):
-            Delete().sql
+            _ = Delete().sql
 
     def test_empty_table_raises(self):
         with pytest.raises(ValueError):
-            Delete().From("").sql
+            _ = Delete().From("").sql
 
     def test_blank_table_raises(self):
         with pytest.raises(ValueError):
-            Delete().From("   ").sql
+            _ = Delete().From("   ").sql
 
     def test_params_empty_by_default(self):
         q = Delete().From("users")

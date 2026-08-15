@@ -20,19 +20,19 @@ class TestUpdateBasic:
 
     def test_empty_table_raises(self):
         with pytest.raises(ValueError):
-            Update("")
+            _ = Update("")
 
     def test_blank_table_raises(self):
         with pytest.raises(ValueError):
-            Update("   ")
+            _ = Update("   ")
 
     def test_no_set_sql_raises(self):
         with pytest.raises(ValueError):
-            Update("users").sql
+            _ = Update("users").sql
 
     def test_empty_set_raises(self):
         with pytest.raises(ValueError):
-            Update("users").Set()
+            _ = Update("users").Set()
 
     def test_params_empty_before_set(self):
         q = Update("users")

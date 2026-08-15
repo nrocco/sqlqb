@@ -41,8 +41,6 @@ class TestSelect:
         assert rows == [{"id": 1}, {"id": 2}]
 
 
-
-
 class TestInsert:
     def test_insert_returns_rowcount(self, conn):
         count = conn.Insert().Into("users").Values(id=4, name="Dave", age=40).execute()

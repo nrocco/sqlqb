@@ -33,23 +33,23 @@ class TestInsertBasic:
 
     def test_no_table_raises(self):
         with pytest.raises(ValueError):
-            Insert().Values(name="Alice").sql
+            _ = Insert().Values(name="Alice").sql
 
     def test_no_values_raises(self):
         with pytest.raises(ValueError):
-            Insert().Into("users").sql
+            _ = Insert().Into("users").sql
 
     def test_empty_table_raises(self):
         with pytest.raises(ValueError):
-            Insert().Into("")
+            _ = Insert().Into("")
 
     def test_blank_table_raises(self):
         with pytest.raises(ValueError):
-            Insert().Into("   ")
+            _ = Insert().Into("   ")
 
     def test_empty_values_raises(self):
         with pytest.raises(ValueError):
-            Insert().Into("users").Values()
+            _ = Insert().Into("users").Values()
 
     def test_params_empty_before_values(self):
         q = Insert().Into("users")

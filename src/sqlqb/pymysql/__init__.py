@@ -3,10 +3,10 @@ import re
 from pymysql.connections import Connection as _Connection
 from pymysql.cursors import DictCursor
 
-from sqlqb import Select as _Select
-from sqlqb import Insert as _Insert
-from sqlqb import Update as _Update
 from sqlqb import Delete as _Delete
+from sqlqb import Insert as _Insert
+from sqlqb import Select as _Select
+from sqlqb import Update as _Update
 
 
 def _to_pymysql(sql: str, params: list | dict) -> tuple[str, list | dict]:

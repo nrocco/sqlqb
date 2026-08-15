@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy import text
-from sqlalchemy.engine import Connection as _SAConnection, Engine as _SAEngine
+from sqlalchemy.engine import Connection as _SAConnection
+from sqlalchemy.engine import Engine as _SAEngine
 from sqlalchemy.pool import StaticPool
 
 from sqlqb.sqlalchemy import Connection, Engine, create_engine

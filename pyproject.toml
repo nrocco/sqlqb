@@ -1,6 +1,6 @@
 [project]
 name = "sqlqb"
-version = "0.2.0"
+dynamic = ["version"]
 description = "a simple sql query builder"
 readme = "README.md"
 authors = []
@@ -9,8 +9,8 @@ dependencies = []
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
+    "pytest>=9.0.3",
     "ruff>=0.15.17",
 ]
 pymysql = [
@@ -31,7 +31,9 @@ source = "vcs"
 testpaths = ["tests"]
 
 [tool.ruff]
-line-length = 999
+line-length = 320
 
 [tool.ruff.lint]
-ignore = ["E501"]  # E501 is the line-too-long rule
+ignore = [
+    "E501",  # E501 is the line-too-long rule
+]
